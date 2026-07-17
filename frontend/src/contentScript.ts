@@ -11,7 +11,7 @@ function scrapeLeetCodeProblem() {
 }
 
 // Receive triggers sent out by extension's popup window
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.action === "SCRAPE_PROBLEM") {
     const data = scrapeLeetCodeProblem();
     sendResponse(data);
