@@ -16,6 +16,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    "types" :["chrome"],
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
