@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ScrapedData {
   title: string;
@@ -6,10 +6,36 @@ interface ScrapedData {
   url: string;
 }
 
+interface ReviewPayload {
+  title: string;
+  titleSlug: string;
+  difficulty: string;
+  topicTags: Array<{ name: string; slug: string }>;
+  url: string;
+  questionHtml: string;
+  questionText: string;
+  currentSolutionCode: string;
+  recentSubmissions: Array<Record<string, unknown>>;
+  capturedAt: string;
+}
+
 export default function App() {
   const [data, setData] = useState<ScrapedData | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const [latestPayload, setLatestPayload] = useState<ReviewPayload | null>(null);
+  const [payloadError, setPayloadError] = useState("");
+
+  useEffect(() => {
+    chrome.storage.local.get(["latestReviewPayload"], (result) => {
+      if (chrome.runtime.lastError) {
+        setPayloadError("Could not read the captured payload.");
+        return;
+      }
+
+      setLatestPayload((result.latestReviewPayload as ReviewPayload | undefined) ?? null);
+    });
+  }, []);
 
   const handleCapture = async () => {
     setError("");
@@ -54,6 +80,18 @@ export default function App() {
     alert(`Successfully stored pattern for: ${data.title}`);
   };
 
+  const refreshPayload = () => {
+    chrome.storage.local.get(["latestReviewPayload"], (result) => {
+      if (chrome.runtime.lastError) {
+        setPayloadError("Could not read the captured payload.");
+        return;
+      }
+
+      setPayloadError("");
+      setLatestPayload((result.latestReviewPayload as ReviewPayload | undefined) ?? null);
+    });
+  };
+
   return (
     <div style={{ width: "300px", padding: "12px", backgroundColor: "#1e1e2e", color: "#cdd6f4", fontFamily: "sans-serif" }}>
       <h3 style={{ margin: "0 0 10px 0", color: "#89b4fa" }}>⚡ DevSRS Engine</h3>
@@ -62,6 +100,25 @@ export default function App() {
           {error}
         </div>
       ) : null}
+
+      <div style={{ marginBottom: "8px", padding: "8px", background: "#26283b", borderRadius: "4px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+          <strong style={{ fontSize: "12px", color: "#89b4fa" }}>Captured Payload</strong>
+          <button onClick={refreshPayload} style={{ padding: "4px 8px", borderRadius: "4px", border: "1px solid #45475a", background: "#313244", color: "#cdd6f4", cursor: "pointer", fontSize: "11px" }}>
+            Refresh
+          </button>
+        </div>
+
+        {payloadError ? (
+          <div style={{ color: "#f38ba8", fontSize: "11px" }}>{payloadError}</div>
+        ) : latestPayload ? (
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "11px", lineHeight: 1.4, color: "#cdd6f4", maxHeight: "220px", overflow: "auto" }}>
+            {JSON.stringify(latestPayload, null, 2)}
+          </pre>
+        ) : (
+          <div style={{ color: "#a6adc8", fontSize: "11px" }}>No payload captured yet. Click Review on a LeetCode problem page first.</div>
+        )}
+      </div>
       
       {!data ? (
         <button onClick={handleCapture} style={{ width: "100%", padding: "8px", background: "#89b4fa", color: "#11111b", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
